@@ -1,0 +1,1 @@
+unzip -p source-archive.zip word2vec/trunk/questions-words.txt
