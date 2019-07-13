@@ -19,7 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from Base import Config
+from BaseLib import Config
 import argparse
 import collections
 import math
@@ -39,7 +39,7 @@ from tensorflow.contrib.tensorboard.plugins import projector
 
 
 
-from Base import Files
+from BaseLib import Files
 from Source import Base
 from Source import DataSet
 from Source import Plotter
@@ -47,20 +47,15 @@ from Source import Plotter
 
 #data_index = 0
 def LogWrite(config: Config.ConfigCls, *log_str_lst):
-	log_str :str="";
-	for param in log_str_lst:
-		log_str = log_str + str(param);
+	return Base.LogWrite(config.OutLogFile(), log_str_lst);
 
-	print(log_str);
-	Files.TextWrite(config.OutLogFile(), log_str + '\n');
-	return;
 
 
 def word2vec_basic(config: Config.ConfigCls, identifier:str):
 	#global data_index
 	out_dir = os.path.join(config.OutDirGet(), identifier)
 	config.OutDirSet(out_dir)
-	Base.LogDir(out_dir)
+	Base.SaveDir(out_dir)
 
 	data_index = 0
 	LogWrite(config, """\n\n\n\nWord to Vec """ + identifier)
@@ -217,7 +212,7 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 			# Note that this is expensive (~20% slowdown if computed every 500 steps)
 			sim_eval_step = config.RepSimStep();
 			if 0x00 == (step % sim_eval_step):         #10000 == 0:
-				sim = similarity.eval()
+				sim = similarity.analogys_evaluate()
 				for i in xrange(valid_size):
 					valid_word = reverse_dictionary[valid_examples[i]]
 					top_k = 8  # number of nearest neighbors
@@ -227,7 +222,7 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 						close_word = reverse_dictionary[nearest[k]]
 						log_str = '%s %s,' % (log_str, close_word)
 					LogWrite(config,log_str)
-		final_embeddings = normalized_embeddings.eval()
+		final_embeddings = normalized_embeddings.analogys_evaluate()
 
 		# Write corresponding labels for the embeddings.
 		meta_file = config.OutMetaFile();            #  out_dir + '/metadata.tsv'
@@ -297,8 +292,6 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 print('All functionality is run after tf.compat.v1.app.run() (b/122547914). This')
 print('could be split up but the methods are laid sequentially with their usage for clarity.')
 def Run(unused_argv):
-
-
 	# Give a folder path as an argument with '--log_dir' to save
 	# TensorBoard summaries. Default is a log folder in current directory.
 	current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -308,11 +301,12 @@ def Run(unused_argv):
 	flags, unused_flags = parser.parse_known_args()
 
 #	out_dir= os.path.join(config.OutDirGet());
-	for i in range(1, 32):
+	for i in range(19, 32):
+		np.random.seed(seed=30)
 		config: Config.ConfigCls = Config.ConfigCls('./Settings/Config.ini')
 
 		config.ModelEmbedSizeSet(8*i);
-		word2vec_basic(config, 'ModelEmbedSize'+str(config.ModelEmbedSizeGet()))
+		word2vec_basic(config, 'ModelEmbedSize' + str(config.ModelEmbedSizeGet()))
 
 
 

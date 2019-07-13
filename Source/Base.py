@@ -2,15 +2,30 @@ import os
 import zipfile
 from six.moves import urllib
 import tensorflow as tf
+from BaseLib import Files
 
 
 
 
 
-def LogDir(log_dir:str):
+
+def SaveDir(log_dir:str):
 	# Create the directory for TensorBoard variables if there is not.
 	if not os.path.exists(log_dir):
 		os.makedirs(log_dir)
+
+def LogWrite(log_file:str, *log_str_lst):
+	log_str :str="";
+	for param in log_str_lst:
+		log_str = log_str + str(param);
+
+	print(log_str);
+	Files.TextWrite(log_file, log_str + '\n');
+	return;
+
+
+
+
 
 # pylint: disable=redefined-outer-name
 def maybe_download(download_dir:str, url:str, filename:str, expected_bytes:int)->str:
