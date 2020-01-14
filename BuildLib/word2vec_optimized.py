@@ -348,7 +348,7 @@ class Word2Vec(object):
       for question in xrange(sub.shape[0]):
         for j in xrange(4):
           if idx[question, j] == sub[question, 3]:
-            # Bingo! We predicted correctly. E.g., [italy, rome, france, paris].
+            # Bingo! We predict_cls correctly. E.g., [italy, rome, france, paris].
             correct += 1
             break
           elif idx[question, j] in sub[question, :3]:

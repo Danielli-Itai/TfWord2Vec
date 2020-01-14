@@ -212,7 +212,7 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 			# Note that this is expensive (~20% slowdown if computed every 500 steps)
 			sim_eval_step = config.RepSimStep();
 			if 0x00 == (step % sim_eval_step):         #10000 == 0:
-				sim = similarity.analogys_evaluate()
+				sim = similarity.eval()#.analogys_evaluate()
 				for i in xrange(valid_size):
 					valid_word = reverse_dictionary[valid_examples[i]]
 					top_k = 8  # number of nearest neighbors
