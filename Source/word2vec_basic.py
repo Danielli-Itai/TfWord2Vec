@@ -51,7 +51,7 @@ def LogWrite(config: Config.ConfigCls, *log_str_lst):
 
 
 
-def word2vec_basic(config: Config.ConfigCls, identifier:str):
+def word2vec_basic(config: Config.ConfigCls, identifier:str, doenload:bool, sim_chk:bool):
 	#global data_index
 	out_dir = os.path.join(config.OutDirGet(), identifier)
 	config.OutDirSet(out_dir)
@@ -64,7 +64,10 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 	###########################################################################
 	LogWrite(config,'\n\nStep 1: Download the data.')
 	url = config.DownloadUrl();dir=config.DownloadDir(); file = config.DownloadFile(); size = config.DownloadSize();
-	filename = Base.maybe_download(dir, url, file, size)
+	if(doenload):
+		filename = Base.maybe_download(dir, url, file, size)
+	else:
+		filename = os.path.join(dir, file)
 
 	LogWrite(config,'Read the data into a list of strings.')
 	vocabulary = Base.read_data(filename)
@@ -210,19 +213,20 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str):
 				average_loss = 0
 
 			# Note that this is expensive (~20% slowdown if computed every 500 steps)
-			sim_eval_step = config.RepSimStep();
-			if 0x00 == (step % sim_eval_step):         #10000 == 0:
-				sim = similarity.eval()#.analogys_evaluate()
-				for i in xrange(valid_size):
-					valid_word = reverse_dictionary[valid_examples[i]]
-					top_k = 8  # number of nearest neighbors
-					nearest = (-sim[i, :]).argsort()[1:top_k + 1]
-					log_str = 'Nearest to %s:' % valid_word
-					for k in xrange(top_k):
-						close_word = reverse_dictionary[nearest[k]]
-						log_str = '%s %s,' % (log_str, close_word)
-					LogWrite(config,log_str)
-		final_embeddings = normalized_embeddings.analogys_evaluate()
+			if(sim_chk):
+				sim_eval_step = config.RepSimStep();
+				if 0x00 == (step % sim_eval_step):         #10000 == 0:
+					sim = similarity.eval()#.analogys_evaluate()
+					for i in xrange(valid_size):
+						valid_word = reverse_dictionary[valid_examples[i]]
+						top_k = 8  # number of nearest neighbors
+						nearest = (-sim[i, :]).argsort()[1:top_k + 1]
+						log_str = 'Nearest to %s:' % valid_word
+						for k in xrange(top_k):
+							close_word = reverse_dictionary[nearest[k]]
+							log_str = '%s %s,' % (log_str, close_word)
+						LogWrite(config,log_str)
+		final_embeddings = normalized_embeddings.eval()#.analogys_evaluate()
 
 		# Write corresponding labels for the embeddings.
 		meta_file = config.OutMetaFile();            #  out_dir + '/metadata.tsv'
@@ -301,12 +305,12 @@ def Run(unused_argv):
 	flags, unused_flags = parser.parse_known_args()
 
 #	out_dir= os.path.join(config.OutDirGet());
-	for i in range(19, 32):
+	for i in [8,16,24,32,64,128,248]:	#range(19, 25):
 		np.random.seed(seed=30)
 		config: Config.ConfigCls = Config.ConfigCls('./Settings/Config.ini')
 
-		config.ModelEmbedSizeSet(8*i);
-		word2vec_basic(config, 'ModelEmbedSize' + str(config.ModelEmbedSizeGet()))
+		config.ModelEmbedSizeSet(i);
+		word2vec_basic(config, 'ModelEmbedSize' + str(config.ModelEmbedSizeGet()), False, False)
 
 
 
