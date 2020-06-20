@@ -1,13 +1,11 @@
 ##############################################################
 # Config.spy
-#
 # Ini configuration file interface class
-#
 # License:  MIT 2019 Itai Danielli
 ##############################################################
 import os
 import configparser
-from BaseLib import Files
+#from BaseLib import Files
 
 
 

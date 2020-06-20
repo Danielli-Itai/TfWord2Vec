@@ -32,26 +32,68 @@ from tempfile import gettempdir
 import numpy as np
 
 from six.moves import xrange  # pylint: disable=redefined-builtin
-import tensorflow as tf
-
-from tensorflow.contrib.tensorboard.plugins import projector
-
-
+#import tensorflow as tf
+import tensorflow.compat.v1 as tf
+from tensorboard.plugins import projector
 
 
-from BaseLib import Files
+
+
+
 from Source import Base
 from Source import DataSet
 from Source import Plotter
 
+from multiprocessing.connection import Listener
+from multiprocessing.connection import Connection
+from array import array
+
+PIPE_NAME:str = 'localhost'
+PIPE_ID:int = 6000
+PIPE_KEY = b'secret password'
+MSG_EXIT = 'PROC:EXIT'
+MSG_SIZE:int = 1255
+
+def ConnWaite(name:str, id:int, key:bytes):
+	address = (name, id)     # family is deduced to be 'AF_INET'
+	listener:Listener = Listener(address, authkey=key)
+	connection:Connection = listener.accept()
+	print('connection accepted from', listener.last_accepted)
+	return(listener,connection)
+
+#connection.send([2.25, None, 'junk', float])
+def ConnSend(connection:Connection, msg):
+	connection.send(msg)
+
+#	connection.send_bytes(b'hello')
+def ConnSendStr(connection:Connection, msg:str):
+	connection.send_bytes(msg.encode())
+
+#connection.send_bytes(array('i', [42, 1729]))
+def ConnSendBytes(connection:Connection, msg:bytearray):
+	connection.send_bytes(msg)
+
+def ConnClose(listener:Listener, connection:Connection):
+	connection.close()
+	listener.close()
+
 
 #data_index = 0
-def LogWrite(config: Config.ConfigCls, *log_str_lst):
-	return Base.LogWrite(config.OutLogFile(), log_str_lst);
+log_connection:Connection = None;
+def LogConn(connection:Connection):
+	global log_connection
+	log_connection = connection
+
+def LogWrite(config:Config.ConfigCls, *log_str_lst):
+	global log_connection
+	log_msg = Base.LogWrite(config.OutLogFile(), log_str_lst)
+	if(None != log_connection):
+		ConnSendStr(log_connection, log_msg)
+	return
 
 
 
-def word2vec_basic(config: Config.ConfigCls, identifier:str, doenload:bool, sim_chk:bool):
+def word2vec_run(config: Config.ConfigCls, identifier:str, doenload:bool, sim_chk:bool):
 	#global data_index
 	out_dir = os.path.join(config.OutDirGet(), identifier)
 	config.OutDirSet(out_dir)
@@ -296,21 +338,28 @@ def word2vec_basic(config: Config.ConfigCls, identifier:str, doenload:bool, sim_
 print('All functionality is run after tf.compat.v1.app.run() (b/122547914). This')
 print('could be split up but the methods are laid sequentially with their usage for clarity.')
 def Run(unused_argv):
-	# Give a folder path as an argument with '--log_dir' to save
-	# TensorBoard summaries. Default is a log folder in current directory.
-	current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+	listener: Listener=None
+	connection: Connection = None
+	listener, connection = ConnWaite(PIPE_NAME, PIPE_ID, PIPE_KEY)
+	LogConn(connection)
 
+	# Give a folder path as an argument with '--log_dir' to save TensorBoard summaries.
+	# By default the log folder in current directory.
+	current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
 	parser = argparse.ArgumentParser()
 	parser.add_argument(	'--log_dir',type=str,default=os.path.join(current_path, 'log'),help='The log directory for TensorBoard summaries.')
 	flags, unused_flags = parser.parse_known_args()
 
-#	out_dir= os.path.join(config.OutDirGet());
+	#Run a loop with embeddings size to check bor best performance.
 	for i in [8,16,24,32,64,128,248]:	#range(19, 25):
 		np.random.seed(seed=30)
 		config: Config.ConfigCls = Config.ConfigCls('./Settings/Config.ini')
-
 		config.ModelEmbedSizeSet(i);
-		word2vec_basic(config, 'ModelEmbedSize' + str(config.ModelEmbedSizeGet()), False, False)
+
+		word2vec_run(config, 'ModelEmbedSize' + str(config.ModelEmbedSizeGet()), False, False)
+
+	ConnClose(listener, connection)
+	return
 
 
 
