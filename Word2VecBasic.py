@@ -37,8 +37,12 @@ def ClientReceive(connection):
 #arr = array('i', [0, 0, 0, 0, 0])
 #print(connection.recv_bytes_into(arr))  # => 8
 #print(arr)  # => array('i', [42, 1729, 0, 0, 0])
-def ClientRecvdBytes(connection, msg:bytes):
-	size:int = connection.recv_bytes_into(msg)
+def ClientRecvdBytes(connection, msg:bytes)->bool:
+	size:int = 0
+	try:
+		size = connection.recv_bytes_into(msg)
+	except:
+		print('Connection lost')
 	return(size)
 
 def ClientDisconnect(connection):
@@ -68,6 +72,8 @@ def main(unused_argv):
 		if(0<size):
 			msg = rcv_buff.decode()
 			print(msg)
+		else:
+			break
 
 	process.join()
 	return;
